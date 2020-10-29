@@ -1,3 +1,5 @@
+github.com/karrick/godirwalk v1.16.1 h1:DynhcF+bztK8gooS0+NDJFrdNZjJ3gzVzC545UNA9iw=
+github.com/karrick/godirwalk v1.16.1/go.mod h1:j4mkqPuvaLI8mp1DroR3P6ad7cyYd4c1qeJ3RV7ULlk=
 github.com/smallfish/simpleyaml v0.0.0-20170911015856-a32031077861 h1:9z0Ip656Pc+3cj/BpHkErOVg4iE0xcAdvJwfA3hMVzU=
 github.com/smallfish/simpleyaml v0.0.0-20170911015856-a32031077861/go.mod h1:eGZ1jp5PTJ+XVhTErUmw0xyPbgctPFlixWPypUrDkSs=
 gopkg.in/check.v1 v0.0.0-20161208181325-20d25e280405/go.mod h1:Co6ibVJAznAaIkqp8huTwlJQCZ016jof/cbN4VW5Yz0=
