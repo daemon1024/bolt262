@@ -7,10 +7,10 @@ import (
 	"log"
 	"os"
 	"os/exec"
-	"path/filepath"
 	"regexp"
 	"syscall"
 
+	"github.com/karrick/godirwalk"
 	"github.com/smallfish/simpleyaml"
 )
 
@@ -40,15 +40,52 @@ func walkDir(rootPath string) {
 	if err != nil {
 		log.Print(err)
 	}
-	filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
-		if err != nil {
-			log.Fatalf(err.Error())
-		}
-		if info.IsDir() == false {
-			processFile(path, assert, sta)
-		}
-		return nil
+	// var wg sync.WaitGroup
+	// filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	// 	if err != nil {
+	// 		log.Fatalf(err.Error())
+	// 	}
+	// 	if info.IsDir() == false {
+	// 		wg.Add(1)
+	// 		go func(path string) {
+	// 			defer wg.Done()
+	// 			processFile(path, assert, sta)
+	// 		}(path)
+	// 		// fmt.Printf("\033[36mTotal files %d\n\033[0m\033[31mFailed Tests %d\n\033[0m\033[34mPassed Tests %d\033[0m", count, fail, pass)
+
+	// 	}
+	// 	return nil
+	// })
+	// wg.Wait()
+	err = godirwalk.Walk(path, &godirwalk.Options{
+		Callback: func(osPathname string, de *godirwalk.Dirent) error {
+
+			if de.IsDir() == false {
+				processFile(osPathname, assert, sta)
+			}
+
+			return nil
+		},
+		ErrorCallback: func(osPathname string, err error) godirwalk.ErrorAction {
+
+			fmt.Fprintf(os.Stderr, "ERROR: %s\n", err)
+			return godirwalk.SkipNode
+		},
+		Unsorted: true,
 	})
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "%s\n", err)
+		os.Exit(1)
+	}
+	// filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
+	// 	if err != nil {
+	// 		log.Fatalf(err.Error())
+	// 	}
+	// 	if info.IsDir() == false {
+	// 		processFile(path, assert, sta)
+	// 	}
+	// 	return nil
+	// })
 	fmt.Printf("\033[36mTotal files %d\n\033[0m\033[31mFailed Tests %d\n\033[0m\033[34mPassed Tests %d\033[0m", count, fail, pass)
 }
 
@@ -77,12 +114,12 @@ func processFile(path string, assert []byte, sta []byte) {
 	var finalFile []byte
 	finalFile = append(finalFile, includeFinal...)
 	finalFile = append(finalFile, data...)
-	// currDir, _ := os.Getwd()
+	currDir, _ := os.Getwd()
 	// err = ioutil.WriteFile(currDir+"/tmp.js", finalFile, 0777)
 	// if err != nil {
 	// 	log.Print(err)
 	// }
-	tmpFile, err := ioutil.TempFile(os.TempDir(), "tmptest-")
+	tmpFile, err := ioutil.TempFile(currDir+"/tmp/", "tmptest-")
 	if err != nil {
 		log.Fatal("Cannot create temporary file", err)
 	}
