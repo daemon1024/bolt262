@@ -8,6 +8,7 @@ import (
 	"os"
 	"os/exec"
 	"regexp"
+	"sync"
 	"syscall"
 
 	"github.com/karrick/godirwalk"
@@ -40,7 +41,7 @@ func walkDir(rootPath string) {
 	if err != nil {
 		log.Print(err)
 	}
-	// var wg sync.WaitGroup
+	var wg sync.WaitGroup
 	// filepath.Walk(path, func(path string, info os.FileInfo, err error) error {
 	// 	if err != nil {
 	// 		log.Fatalf(err.Error())
@@ -51,17 +52,22 @@ func walkDir(rootPath string) {
 	// 			defer wg.Done()
 	// 			processFile(path, assert, sta)
 	// 		}(path)
-	// 		// fmt.Printf("\033[36mTotal files %d\n\033[0m\033[31mFailed Tests %d\n\033[0m\033[34mPassed Tests %d\033[0m", count, fail, pass)
+	// 		fmt.Printf("\033[36mTotal files %d\n\033[0m\033[31mFailed Tests %d\n\033[0m\033[34mPassed Tests %d\033[0m", count, fail, pass)
 
 	// 	}
 	// 	return nil
 	// })
-	// wg.Wait()
 	err = godirwalk.Walk(path, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
 
 			if de.IsDir() == false {
-				processFile(osPathname, assert, sta)
+				wg.Add(1)
+				go func(path string) {
+					//note to self : check file directive limit
+					defer wg.Done()
+					processFile(osPathname, assert, sta)
+				}(path)
+				fmt.Printf("\033[36mTotal files %d\n\033[0m\033[31mFailed Tests %d\n\033[0m\033[34mPassed Tests %d\033[0m", count, fail, pass)
 			}
 
 			return nil
@@ -86,6 +92,7 @@ func walkDir(rootPath string) {
 	// 	}
 	// 	return nil
 	// })
+	wg.Wait()
 	fmt.Printf("\033[36mTotal files %d\n\033[0m\033[31mFailed Tests %d\n\033[0m\033[34mPassed Tests %d\033[0m", count, fail, pass)
 }
 
