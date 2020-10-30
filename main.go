@@ -16,9 +16,11 @@ import (
 )
 
 var count, pass, fail int64 = 0, 0, 0
+var includePath string
 
 func main() {
 	path := os.Args[1]
+	includePath = os.Args[2]
 	fi, err := os.Stat(path)
 	if err != nil {
 		log.Print(err)
@@ -33,11 +35,12 @@ func main() {
 
 func walkDir(rootPath string) {
 	path := rootPath
-	assert, err := ioutil.ReadFile(os.Args[2] + "assert.js")
+	// includePath = "../test262/harness/" //hardcoded for bench
+	assert, err := ioutil.ReadFile(includePath + "assert.js")
 	if err != nil {
 		log.Print(err)
 	}
-	sta, err := ioutil.ReadFile(os.Args[2] + "sta.js")
+	sta, err := ioutil.ReadFile(includePath + "sta.js")
 	if err != nil {
 		log.Print(err)
 	}
@@ -114,7 +117,7 @@ func processFile(path string, assert []byte, sta []byte) {
 		includes, _ := yaml.Get("includes").Array()
 		fmt.Print(includes)
 		for _, include := range includes {
-			data, _ := ioutil.ReadFile(os.Args[2] + include.(string))
+			data, _ := ioutil.ReadFile(includePath + include.(string))
 			includeFinal = append(includeFinal, data...)
 		}
 	}
