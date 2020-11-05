@@ -1,4 +1,4 @@
-package main
+package runtests
 
 import (
 	"bytes"
@@ -15,11 +15,11 @@ import (
 	"github.com/smallfish/simpleyaml"
 )
 
-func runTests(testPath string, includePath string) {
+var count, pass, fail int64 = 0, 0, 0
+
+func Dir(testPath string, includePath string) {
 	count, pass, fail = 0, 0, 0
-	fmt.Println(testPath, includePath)
 	path := testPath
-	// includePath = "../test262/harness/" //hardcoded for bench
 	assert, err := ioutil.ReadFile(includePath + "/assert.js")
 	if err != nil {
 		log.Print(err)
@@ -58,6 +58,21 @@ func runTests(testPath string, includePath string) {
 	}
 	wg.Wait()
 	fmt.Printf("\033[36mTotal files %d\n\033[0m\033[31mFailed Tests %d\n\033[0m\033[34mPassed Tests %d\033[0m\n", count, fail, pass)
+}
+
+func File(testPath string, includePath string) {
+	assert, err := ioutil.ReadFile(includePath + "/assert.js")
+	if err != nil {
+		log.Print(err)
+	}
+	sta, err := ioutil.ReadFile(includePath + "/sta.js")
+	if err != nil {
+		log.Print(err)
+	}
+	var mustIncludes []byte
+	mustIncludes = append(mustIncludes, assert...)
+	mustIncludes = append(mustIncludes, sta...)
+	processFile(testPath, mustIncludes, includePath)
 }
 
 func processFile(path string, mustIncludes []byte, includePath string) {
