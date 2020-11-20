@@ -17,6 +17,7 @@ import (
 
 var count, pass, fail int64 = 0, 0, 0
 
+//Dir traverses through the test path and processes each file after appending the must includes from includePath
 func Dir(testPath string, includePath string) {
 	count, pass, fail = 0, 0, 0
 	path := testPath
@@ -32,14 +33,18 @@ func Dir(testPath string, includePath string) {
 	mustIncludes = append(mustIncludes, assert...)
 	mustIncludes = append(mustIncludes, sta...)
 	var wg sync.WaitGroup
+	goroutines := make(chan struct{}, 64)
 	err = godirwalk.Walk(path, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
 			if !de.IsDir() {
 				wg.Add(1)
+				goroutines <- struct{}{}
 				go func(path string) {
 					//note to self : check file directive limit
 					defer wg.Done()
 					processFile(osPathname, mustIncludes, includePath)
+					<-goroutines
+
 				}(path)
 			}
 
@@ -60,6 +65,7 @@ func Dir(testPath string, includePath string) {
 	fmt.Printf("\033[36mTotal files %d\n\033[0m\033[31mFailed Tests %d\n\033[0m\033[34mPassed Tests %d\033[0m\n", count, fail, pass)
 }
 
+// File processes the testPath after appending the must includes from includePath
 func File(testPath string, includePath string) {
 	assert, err := ioutil.ReadFile(includePath + "/assert.js")
 	if err != nil {
