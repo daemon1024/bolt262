@@ -16,25 +16,34 @@ import (
 )
 
 var count, pass, fail int64 = 0, 0, 0
+var includesMap = make(map[string][]byte)
 
 //Dir traverses through the test path and processes each file after appending the must includes from includePath
 func Dir(testPath string, includePath string) {
 	count, pass, fail = 0, 0, 0
 	path := testPath
-	assert, err := ioutil.ReadFile(includePath + "/assert.js")
-	if err != nil {
-		log.Print(err)
+	if len(includesMap["assert.js"]) == 0 {
+		data, err := ioutil.ReadFile(includePath + "/assert.js")
+		if err != nil {
+			log.Fatal("Failed to read assert.js")
+		}
+		includesMap["assert.js"] = data
 	}
-	sta, err := ioutil.ReadFile(includePath + "/sta.js")
-	if err != nil {
-		log.Print(err)
+	assert := includesMap["assert.js"]
+	if len(includesMap["sta.js"]) == 0 {
+		data, err := ioutil.ReadFile(includePath + "/sta.js")
+		if err != nil {
+			log.Fatal("Failed to read sta.js")
+		}
+		includesMap["sta.js"] = data
 	}
+	sta := includesMap["sta.js"]
 	var mustIncludes []byte
 	mustIncludes = append(mustIncludes, assert...)
 	mustIncludes = append(mustIncludes, sta...)
 	var wg sync.WaitGroup
 	goroutines := make(chan struct{}, 64)
-	err = godirwalk.Walk(path, &godirwalk.Options{
+	err := godirwalk.Walk(path, &godirwalk.Options{
 		Callback: func(osPathname string, de *godirwalk.Dirent) error {
 			if !de.IsDir() {
 				wg.Add(1)
@@ -67,14 +76,22 @@ func Dir(testPath string, includePath string) {
 
 // File processes the testPath after appending the must includes from includePath
 func File(testPath string, includePath string) {
-	assert, err := ioutil.ReadFile(includePath + "/assert.js")
-	if err != nil {
-		log.Print(err)
+	if len(includesMap["assert.js"]) == 0 {
+		data, err := ioutil.ReadFile(includePath + "/assert.js")
+		if err != nil {
+			log.Fatal("Failed to read assert.js")
+		}
+		includesMap["assert.js"] = data
 	}
-	sta, err := ioutil.ReadFile(includePath + "/sta.js")
-	if err != nil {
-		log.Print(err)
+	assert := includesMap["assert.js"]
+	if len(includesMap["sta.js"]) == 0 {
+		data, err := ioutil.ReadFile(includePath + "/sta.js")
+		if err != nil {
+			log.Fatal("Failed to read sta.js")
+		}
+		includesMap["sta.js"] = data
 	}
+	sta := includesMap["sta.js"]
 	var mustIncludes []byte
 	mustIncludes = append(mustIncludes, assert...)
 	mustIncludes = append(mustIncludes, sta...)
@@ -83,7 +100,10 @@ func File(testPath string, includePath string) {
 
 func processFile(path string, mustIncludes []byte, includePath string) {
 
-	data, _ := ioutil.ReadFile(path)
+	data, err := ioutil.ReadFile(path)
+	if err != nil {
+		log.Fatal("Failed to read file")
+	}
 
 	var includeFinal []byte
 	includeFinal = append(includeFinal, mustIncludes...)
@@ -99,9 +119,14 @@ func processFile(path string, mustIncludes []byte, includePath string) {
 		// fmt.Printf("Value: %#v\n", bar)
 		includes, _ := yaml.Get("includes").Array()
 		for _, include := range includes {
-			data, _ := ioutil.ReadFile(includePath + include.(string))
-			// fmt.Printf("%s Value: %#v\n", includePath+include.(string), data)
-			includeFinal = append(includeFinal, data...)
+			if len(includesMap[include.(string)]) == 0 {
+				data, err := ioutil.ReadFile(includePath + include.(string))
+				if err != nil {
+					log.Print("Failed to read", include.(string), "from harness")
+				}
+				includesMap[include.(string)] = data
+			}
+			includeFinal = append(includeFinal, includesMap[include.(string)]...)
 		}
 	}
 
@@ -119,7 +144,7 @@ func processFile(path string, mustIncludes []byte, includePath string) {
 	defer os.Remove(tmpFile.Name())
 	count++
 
-	// Example writing to the file
+	// Writing the temp test file
 	if _, err = tmpFile.Write(finalFile); err != nil {
 		log.Fatal("Failed to write to temporary file", err)
 	}
